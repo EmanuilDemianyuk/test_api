@@ -111,3 +111,8 @@ class Product(Base, TimestampMixin):
         back_populates="product",
         cascade="all, delete-orphan",
     )
+
+    stores: Mapped[list["ProductStore"]] = relationship(
+        back_populates="product",
+        cascade="all, delete-orphan",
+    )   

@@ -12,6 +12,8 @@ from sqlalchemy.exc import IntegrityError
 from app.api.v1.category import router as category_router
 from app.api.v1.product import router as product_router
 from app.api.v1.product_image import router as product_image_router
+from app.api.v1.product_store import router as product_store_router
+
 from app.core.config import settings
 from app.core.db import AsyncSessionLocal
 from app.seeders import ensure_demo_data
@@ -87,3 +89,4 @@ async def root():
 app.include_router(category_router)
 app.include_router(product_router)
 app.include_router(product_image_router)
+app.include_router(product_store_router)

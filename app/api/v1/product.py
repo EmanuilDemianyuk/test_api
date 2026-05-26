@@ -71,7 +71,7 @@ async def get_products(
 @router.post(
     "",
     response_model=ProductDetailSchema,
-    status_code=status.HTTP_201_CREATED,
+    status_code=201,
 )
 async def create_product(
     payload: ProductCreateSchema,
@@ -131,7 +131,7 @@ async def get_product_attributes(
 @router.post(
     "/{product_id}/attribute",
     response_model=ProductAttributeResponseSchema,
-    status_code=status.HTTP_201_CREATED,
+    status_code=201,
 )
 async def create_product_attribute(
     product_id: int,
@@ -167,7 +167,7 @@ async def update_product_attribute(
 
 @router.delete(
     "/{product_id}/attribute/{attribute_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=204,
 )
 async def delete_product_attribute(
     product_id: int,
@@ -251,7 +251,7 @@ async def get_product_categories(
 @router.post(
     "/{product_id}/category",
     response_model=ProductCategoryResponseSchema,
-    status_code=status.HTTP_201_CREATED,
+    status_code=201,
 )
 async def create_product_category(
     product_id: int,
@@ -268,7 +268,7 @@ async def create_product_category(
 
 @router.delete(
     "/{product_id}/category/{category_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=204,
 )
 async def delete_product_category(
     product_id: int,
