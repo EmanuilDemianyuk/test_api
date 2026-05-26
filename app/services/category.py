@@ -112,8 +112,9 @@ class CategoryService:
         for key, value in update_data.items():
             setattr(category, key, value)
 
-        await self.session.flush()
         self.repository.set_full_path(category)
+        await self.session.commit()
+        await self.session.refresh(category)
 
         return category
     
@@ -121,4 +122,5 @@ class CategoryService:
         self,
         category,
     ):
-        await self.repository.delete(category)
+        await self.session.delete(category)
+        await self.session.commit()
