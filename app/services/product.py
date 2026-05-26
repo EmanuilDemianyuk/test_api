@@ -2,6 +2,7 @@ from fastapi import HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.models.category import Category
 from app.models.product import Product
@@ -132,6 +133,109 @@ class ProductService:
             page=page,
             size=size,
         )
+
+    async def get_product_categories(
+        self,
+        product_id: int,
+    ):
+        product = await self.repository.get_by_id(
+            product_id,
+        )
+
+        if not product:
+            raise HTTPException(
+                status_code=404,
+                detail="Product not found",
+            )
+
+        result = await self.session.execute(
+            select(ProductCategory)
+            .options(selectinload(ProductCategory.category))
+            .where(ProductCategory.product_id == product_id)
+        )
+
+        return result.scalars().all()
+
+    async def create_product_category(
+        self,
+        product_id: int,
+        category_id: int,
+    ):
+        product = await self.repository.get_by_id(
+            product_id,
+        )
+
+        if not product:
+            raise HTTPException(
+                status_code=404,
+                detail="Product not found",
+            )
+
+        await self._validate_categories([category_id])
+
+        existing_assignment = await self.session.scalar(
+            select(ProductCategory).where(
+                ProductCategory.product_id == product_id,
+                ProductCategory.category_id == category_id,
+            )
+        )
+
+        if existing_assignment:
+            raise HTTPException(
+                status_code=409,
+                detail="Category already assigned",
+            )
+
+        try:
+            product_category = ProductCategory(
+                product_id=product_id,
+                category_id=category_id,
+            )
+
+            self.session.add(product_category)
+            await self.session.commit()
+            await self.session.refresh(product_category)
+
+            return product_category
+
+        except Exception:
+            await self.session.rollback()
+            raise
+
+    async def delete_product_category(
+        self,
+        product_id: int,
+        category_id: int,
+    ):
+        product = await self.repository.get_by_id(
+            product_id,
+        )
+
+        if not product:
+            raise HTTPException(
+                status_code=404,
+                detail="Product not found",
+            )
+
+        product_category = await self.session.scalar(
+            select(ProductCategory).where(
+                ProductCategory.product_id == product_id,
+                ProductCategory.category_id == category_id,
+            )
+        )
+
+        if not product_category:
+            raise HTTPException(
+                status_code=404,
+                detail="Category not found",
+            )
+
+        try:
+            await self.session.delete(product_category)
+            await self.session.commit()
+        except Exception:
+            await self.session.rollback()
+            raise
 
     async def update_product(
         self,

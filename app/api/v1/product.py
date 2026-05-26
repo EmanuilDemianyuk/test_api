@@ -14,6 +14,8 @@ from app.repositories.product import ProductRepository
 from app.services.product import ProductService
 
 from app.schemas.product import (
+    ProductCategoryCreateSchema,
+    ProductCategoryResponseSchema,
     ProductCreateSchema,
     ProductDetailSchema,
     ProductListItemSchema,
@@ -149,6 +151,60 @@ async def delete_product(
         )
 
     await service.delete_product(product)
+
+    return Response(status_code=204)
+
+
+@router.get(
+    "/{product_id}/category",
+    response_model=list[
+        ProductCategoryResponseSchema,
+    ],
+)
+async def get_product_categories(
+    product_id: int,
+    service: ProductService = Depends(
+        get_product_service,
+    ),
+):
+    return await service.get_product_categories(
+        product_id,
+    )
+
+
+@router.post(
+    "/{product_id}/category",
+    response_model=ProductCategoryResponseSchema,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_product_category(
+    product_id: int,
+    payload: ProductCategoryCreateSchema,
+    service: ProductService = Depends(
+        get_product_service,
+    ),
+):
+    return await service.create_product_category(
+        product_id,
+        payload.category_id,
+    )
+
+
+@router.delete(
+    "/{product_id}/category/{category_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_product_category(
+    product_id: int,
+    category_id: int,
+    service: ProductService = Depends(
+        get_product_service,
+    ),
+):
+    await service.delete_product_category(
+        product_id,
+        category_id,
+    )
 
     return Response(status_code=204)
 
