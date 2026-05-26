@@ -16,6 +16,8 @@ async def db_session() -> AsyncGenerator[AsyncSession]:
             yield session
         finally:
             await cleanup_seed_data(session)
+            await session.rollback()
+            await session.close()
 
     await engine.dispose()
 
