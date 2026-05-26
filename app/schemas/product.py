@@ -1,7 +1,9 @@
+from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel
 from pydantic import ConfigDict
+from pydantic import Field
 
 from app.core.enums import StatusEnum
 
@@ -9,6 +11,7 @@ from app.core.enums import StatusEnum
 class ProductImageCreateSchema(BaseModel):
     image: str
     sort_order: int = 0
+
 
 class ProductImageResponseSchema(
     ProductImageCreateSchema,
@@ -19,13 +22,14 @@ class ProductImageResponseSchema(
 
 
 class ProductAttributeCreateSchema(BaseModel):
-    group_name: str | None = None
+    group_name: str |None = None
 
     name: str
 
     value: str
 
     sort_order: int = 0
+
 
 class ProductAttributeUpdateSchema(BaseModel):
     group_name: str | None = None
@@ -35,6 +39,7 @@ class ProductAttributeUpdateSchema(BaseModel):
     value: str | None = None
 
     sort_order: int | None = None
+
 
 class ProductAttributeResponseSchema(
     ProductAttributeCreateSchema,
@@ -47,6 +52,7 @@ class ProductAttributeResponseSchema(
 class ProductCategoryCreateSchema(BaseModel):
     category_id: int
 
+
 class ProductCategoryResponseSchema(BaseModel):
     product_category_id: int
 
@@ -55,6 +61,14 @@ class ProductCategoryResponseSchema(BaseModel):
     category_name: str
 
     full_path: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class StoreResponseSchema(BaseModel):
+    store_id: int
+
+    name: str
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -82,15 +96,16 @@ class ProductCreateSchema(BaseModel):
 
     categories: list[
         ProductCategoryCreateSchema
-    ] = []
+    ] = Field(default_factory=list)
 
     images: list[
         ProductImageCreateSchema
-    ] = []
+    ] = Field(default_factory=list)
 
     attributes: list[
         ProductAttributeCreateSchema
-    ] = []
+    ] = Field(default_factory=list)
+
 
 class ProductUpdateSchema(BaseModel):
     name: str | None = None
@@ -117,6 +132,7 @@ class ProductUpdateSchema(BaseModel):
         ProductCategoryCreateSchema
     ] | None = None
 
+
 class ProductListItemSchema(BaseModel):
     product_id: int
 
@@ -126,6 +142,7 @@ class ProductListItemSchema(BaseModel):
 
     price: Decimal | None
 
+
 class ProductDetailSchema(BaseModel):
     product_id: int
 
@@ -134,6 +151,12 @@ class ProductDetailSchema(BaseModel):
     description: str | None
 
     seo_keyword: str | None
+
+    meta_title: str | None
+    meta_description: str | None
+    meta_keyword: str | None
+
+    image: str | None
 
     status: StatusEnum
 
@@ -147,16 +170,19 @@ class ProductDetailSchema(BaseModel):
 
     viewed: int
 
+    date_added: datetime | None
+    date_modified: datetime | None
+
     categories: list[
         ProductCategoryResponseSchema
-    ]
+    ] = Field(default_factory=list)
 
     images: list[
         ProductImageResponseSchema
-    ]
+    ] = Field(default_factory=list)
 
     attributes: list[
         ProductAttributeResponseSchema
-    ]
+    ] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
