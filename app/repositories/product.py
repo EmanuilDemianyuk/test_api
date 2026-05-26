@@ -89,9 +89,17 @@ class ProductRepository:
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
     
-    async def get_by_seo_keyword(self, seo_keyword: str):
-        stmt = select(Product).where(Product.seo_keyword == seo_keyword)
-
+    async def get_by_seo_keyword(
+        self,
+        seo_keyword: str | None,
+    ):
+        if not seo_keyword:
+            return None
+    
+        stmt = select(Product).where(
+            Product.seo_keyword == seo_keyword
+        )
+    
         result = await self.session.execute(stmt)
-
+    
         return result.scalar_one_or_none()

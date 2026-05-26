@@ -186,3 +186,5 @@ class ProductDetailSchema(BaseModel):
     ] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
+
+    

@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import HTTPException
 from fastapi import Response
+from fastapi import status
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -65,6 +66,7 @@ async def get_products(
 @router.post(
     "",
     response_model=ProductDetailSchema,
+    status_code=status.HTTP_201_CREATED,
 )
 async def create_product(
     payload: ProductCreateSchema,

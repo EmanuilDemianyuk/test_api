@@ -46,9 +46,23 @@ class ProductService:
             )
 
 
-    async def _validate_duplicate_seo(self, seo_keyword: str):
-        existing = await self.repository.get_by_seo_keyword(seo_keyword)
-
+    async def _validate_duplicate_seo(
+        self,
+        seo_keyword: str | None,
+    ):
+        seo_keyword = (
+            seo_keyword.strip()
+            if isinstance(seo_keyword, str)
+            else None
+        )
+    
+        if not seo_keyword:
+            return
+    
+        existing = await self.repository.get_by_seo_keyword(
+            seo_keyword,
+        )
+    
         if existing:
             raise HTTPException(
                 status_code=409,
@@ -63,7 +77,9 @@ class ProductService:
             category_ids = [c.category_id for c in payload.categories]
 
             await self._validate_categories(category_ids)
-            await self._validate_duplicate_seo(payload.seo_keyword)
+            await self._validate_duplicate_seo(
+                payload.seo_keyword
+            )
 
             product_data = payload.model_dump(
                 exclude={
