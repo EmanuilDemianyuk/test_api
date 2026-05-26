@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from contextlib import asynccontextmanager
 
 from alembic import command
 from alembic.config import Config
@@ -29,9 +30,21 @@ def run_migrations() -> None:
     command.upgrade(config, "head")
 
 
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    await asyncio.to_thread(run_migrations)
+
+    if settings.AUTO_SEED_TEST_DATA:
+        async with AsyncSessionLocal() as session:
+            await ensure_demo_data(session)
+
+    yield
+
+
 app = FastAPI(
     title="Shop API",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 
@@ -61,15 +74,6 @@ async def integrity_exception_handler(_: Request, exc: IntegrityError):
 async def generic_exception_handler(_: Request, exc: Exception):
     logger.exception("Unhandled exception", exc_info=exc)
     return error_response(400, "Bad request")
-
-
-@app.on_event("startup")
-async def startup() -> None:
-    await asyncio.to_thread(run_migrations)
-
-    if settings.AUTO_SEED_TEST_DATA:
-        async with AsyncSessionLocal() as session:
-            await ensure_demo_data(session)
 
 
 @app.get("/")
