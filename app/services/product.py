@@ -111,7 +111,8 @@ class ProductService:
         for key, value in update_data.items():
             setattr(product, key, value)
 
-        await self.session.flush()
+        await self.session.commit()
+        await self.session.refresh(product)
 
         return product
     
@@ -120,3 +121,4 @@ class ProductService:
         product: Product,
     ):
         await self.session.delete(product)
+        await self.session.commit()
