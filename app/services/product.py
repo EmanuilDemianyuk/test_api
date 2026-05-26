@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import delete
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -13,6 +14,8 @@ from app.models.product_category import ProductCategory
 from app.repositories.product import ProductRepository
 
 from app.schemas.product import (
+    ProductAttributeCreateSchema,
+    ProductAttributeUpdateSchema,
     ProductCreateSchema,
     ProductUpdateSchema,
 )
@@ -134,10 +137,10 @@ class ProductService:
             size=size,
         )
 
-    async def get_product_categories(
+    async def _ensure_product_exists(
         self,
         product_id: int,
-    ):
+    ) -> Product:
         product = await self.repository.get_by_id(
             product_id,
         )
@@ -147,6 +150,120 @@ class ProductService:
                 status_code=404,
                 detail="Product not found",
             )
+
+        return product
+
+    async def get_product_attributes(
+        self,
+        product_id: int,
+    ):
+        await self._ensure_product_exists(product_id)
+
+        result = await self.session.execute(
+            select(ProductAttribute)
+            .where(ProductAttribute.product_id == product_id)
+            .order_by(
+                ProductAttribute.sort_order.asc(),
+                ProductAttribute.product_attribute_id.asc(),
+            )
+        )
+
+        return result.scalars().all()
+
+    async def create_product_attribute(
+        self,
+        product_id: int,
+        payload: ProductAttributeCreateSchema,
+    ):
+        await self._ensure_product_exists(product_id)
+
+        try:
+            attribute = ProductAttribute(
+                product_id=product_id,
+                **payload.model_dump(),
+            )
+
+            self.session.add(attribute)
+            await self.session.commit()
+            await self.session.refresh(attribute)
+
+            return attribute
+
+        except Exception:
+            await self.session.rollback()
+            raise
+
+    async def _get_product_attribute(
+        self,
+        product_id: int,
+        attribute_id: int,
+    ) -> ProductAttribute:
+        await self._ensure_product_exists(product_id)
+
+        attribute = await self.session.scalar(
+            select(ProductAttribute).where(
+                ProductAttribute.product_id == product_id,
+                ProductAttribute.product_attribute_id == attribute_id,
+            )
+        )
+
+        if not attribute:
+            raise HTTPException(
+                status_code=404,
+                detail="Attribute not found",
+            )
+
+        return attribute
+
+    async def update_product_attribute(
+        self,
+        product_id: int,
+        attribute_id: int,
+        payload: ProductAttributeUpdateSchema,
+    ):
+        attribute = await self._get_product_attribute(
+            product_id,
+            attribute_id,
+        )
+
+        try:
+            update_data = payload.model_dump(exclude_unset=True)
+
+            for key, value in update_data.items():
+                setattr(attribute, key, value)
+
+            await self.session.commit()
+            await self.session.refresh(attribute)
+
+            return attribute
+
+        except Exception:
+            await self.session.rollback()
+            raise
+
+    async def delete_product_attribute(
+        self,
+        product_id: int,
+        attribute_id: int,
+    ):
+        attribute = await self._get_product_attribute(
+            product_id,
+            attribute_id,
+        )
+
+        try:
+            await self.session.delete(attribute)
+            await self.session.commit()
+
+        except Exception:
+            await self.session.rollback()
+            raise
+
+    async def get_product_categories(
+        self,
+        product_id: int,
+    ):
+        await self._ensure_product_exists(product_id)
 
         result = await self.session.execute(
             select(ProductCategory)

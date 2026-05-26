@@ -14,6 +14,9 @@ from app.repositories.product import ProductRepository
 from app.services.product import ProductService
 
 from app.schemas.product import (
+    ProductAttributeCreateSchema,
+    ProductAttributeResponseSchema,
+    ProductAttributeUpdateSchema,
     ProductCategoryCreateSchema,
     ProductCategoryResponseSchema,
     ProductCreateSchema,
@@ -106,6 +109,79 @@ async def update_product(
         product,
         payload,
     )
+
+
+@router.get(
+    "/{product_id}/attribute",
+    response_model=list[
+        ProductAttributeResponseSchema,
+    ],
+)
+async def get_product_attributes(
+    product_id: int,
+    service: ProductService = Depends(
+        get_product_service,
+    ),
+):
+    return await service.get_product_attributes(
+        product_id,
+    )
+
+
+@router.post(
+    "/{product_id}/attribute",
+    response_model=ProductAttributeResponseSchema,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_product_attribute(
+    product_id: int,
+    payload: ProductAttributeCreateSchema,
+    service: ProductService = Depends(
+        get_product_service,
+    ),
+):
+    return await service.create_product_attribute(
+        product_id,
+        payload,
+    )
+
+
+@router.patch(
+    "/{product_id}/attribute/{attribute_id}",
+    response_model=ProductAttributeResponseSchema,
+)
+async def update_product_attribute(
+    product_id: int,
+    attribute_id: int,
+    payload: ProductAttributeUpdateSchema,
+    service: ProductService = Depends(
+        get_product_service,
+    ),
+):
+    return await service.update_product_attribute(
+        product_id,
+        attribute_id,
+        payload,
+    )
+
+
+@router.delete(
+    "/{product_id}/attribute/{attribute_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_product_attribute(
+    product_id: int,
+    attribute_id: int,
+    service: ProductService = Depends(
+        get_product_service,
+    ),
+):
+    await service.delete_product_attribute(
+        product_id,
+        attribute_id,
+    )
+
+    return Response(status_code=204)
 
 
 @router.get(
