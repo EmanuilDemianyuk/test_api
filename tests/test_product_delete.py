@@ -50,21 +50,30 @@ async def cleanup_product(product_id: int) -> None:
 
 @pytest.mark.asyncio
 async def test_delete_product_removes_record():
-    product_id = await create_product("Delete me", "delete-product-success")
+    product_id = await create_product(
+        "Delete me",
+        "delete-product-success",
+    )
 
-    try:
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-            response = await client.delete(f"/product/{product_id}")
+    transport = ASGITransport(app=app)
 
-        assert response.status_code == 204
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://testserver",
+    ) as client:
+        response = await client.delete(
+            f"/product/{product_id}"
+        )
 
-        async with AsyncSessionLocal() as session:
-            deleted = await session.get(Product, product_id)
+    assert response.status_code == 204
 
-        assert deleted is None
-    finally:
-        await cleanup_product(product_id)
+    async with AsyncSessionLocal() as session:
+        deleted = await session.get(
+            Product,
+            product_id,
+        )
+
+    assert deleted is None
 
 
 @pytest.mark.asyncio

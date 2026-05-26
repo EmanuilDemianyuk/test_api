@@ -149,3 +149,6 @@ async def delete_product(
     await service.delete_product(product)
 
     return Response(status_code=204)
+
+
+
