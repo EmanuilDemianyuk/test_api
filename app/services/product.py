@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.models.category import Category
 from app.models.product import Product
@@ -24,14 +24,47 @@ class ProductService:
         session: AsyncSession,
     ):
         self.repository = repository
-
         self.session = session
+
+    async def _validate_categories(self, category_ids: list[int]):
+        if not category_ids:
+            return
+
+        result = await self.session.execute(
+            select(Category.category_id).where(
+                Category.category_id.in_(category_ids)
+            )
+        )
+
+        existing_ids = set(result.scalars().all())
+        missing = set(category_ids) - existing_ids
+        
+        if missing:
+            raise HTTPException(
+                status_code=404,
+                detail="Category not found",
+            )
+
+
+    async def _validate_duplicate_seo(self, seo_keyword: str):
+        existing = await self.repository.get_by_seo_keyword(seo_keyword)
+
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail="Product with this SEO keyword already exists",
+            )
 
     async def create_product(
         self,
         payload: ProductCreateSchema,
     ):
         try:
+            category_ids = [c.category_id for c in payload.categories]
+
+            await self._validate_categories(category_ids)
+            await self._validate_duplicate_seo(payload.seo_keyword)
+
             product_data = payload.model_dump(
                 exclude={
                     "categories",
@@ -40,51 +73,35 @@ class ProductService:
                 }
             )
 
-            product = await self.repository.create_product(
-                product_data
-            )
+            product = await self.repository.create_product(product_data)
 
-            for category_data in payload.categories:
-                self.session.add(
-                    ProductCategory(
-                        product_id=product.product_id,
-                        category_id=category_data.category_id,
-                    )
+            self.session.add_all([
+                ProductCategory(
+                    product_id=product.product_id,
+                    category_id=c.category_id,
                 )
+                for c in payload.categories
+            ])
 
-            for image_data in payload.images:
-                self.session.add(
-                    ProductImage(
-                        product_id=product.product_id,
-                        **image_data.model_dump(),
-                    )
+            self.session.add_all([
+                ProductImage(
+                    product_id=product.product_id,
+                    **img.model_dump(),
                 )
+                for img in payload.images
+            ])
 
-            for attr_data in payload.attributes:
-                self.session.add(
-                    ProductAttribute(
-                        product_id=product.product_id,
-                        **attr_data.model_dump(),
-                    )
+            self.session.add_all([
+                ProductAttribute(
+                    product_id=product.product_id,
+                    **attr.model_dump(),
                 )
+                for attr in payload.attributes
+            ])
 
             await self.session.commit()
 
-            await self.session.refresh(product)
-
-            return await self.repository.get_by_id(
-                product.product_id
-            )
-
-        except IntegrityError as exc:
-            await self.session.rollback()
-            message = str(exc.orig).lower()
-            if "duplicate" in message or "unique" in message:
-                raise HTTPException(
-                    status_code=409,
-                    detail="Product with this SEO keyword already exists",
-                )
-            raise
+            return await self.repository.get_by_id(product.product_id)
 
         except Exception:
             await self.session.rollback()
@@ -99,69 +116,63 @@ class ProductService:
             page=page,
             size=size,
         )
-        
+
     async def update_product(
         self,
         product: Product,
         payload: ProductUpdateSchema,
     ):
         try:
-            update_data = payload.model_dump(
-                exclude_unset=True,
-            )
+            update_data = payload.model_dump(exclude_unset=True)
 
             categories = update_data.pop("categories", None)
 
+            # ---- categories update ----
             if categories is not None:
-                for product_category in list(product.categories):
-                    await self.session.delete(product_category)
+                category_ids = [c["category_id"] for c in categories]
 
-                for category_data in categories:
-                    category = await self.session.get(
-                        Category,
-                        category_data["category_id"],
+                await self._validate_categories(category_ids)
+
+                await self.session.execute(
+                    delete(ProductCategory).where(
+                        ProductCategory.product_id == product.product_id
+                )
+)
+
+                self.session.add_all([
+                    ProductCategory(
+                        product_id=product.product_id,
+                        category_id=c["category_id"],
                     )
+                    for c in categories
+                ])
 
-                    if category is None:
-                        raise HTTPException(
-                            status_code=404,
-                            detail="Category not found",
-                        )
+            # ---- duplicate SEO check ----
+            if "seo_keyword" in update_data:
+                await self._validate_duplicate_seo(
+                    update_data["seo_keyword"]
+                )
 
-                    self.session.add(
-                        ProductCategory(
-                            product_id=product.product_id,
-                            category_id=category.category_id,
-                        )
-                    )
-
+            # ---- update fields ----
             for key, value in update_data.items():
                 setattr(product, key, value)
 
             await self.session.commit()
             await self.session.refresh(product)
 
-            return await self.repository.get_by_id(
-                product.product_id,
-            )
-
-        except IntegrityError as exc:
-            await self.session.rollback()
-            message = str(exc.orig).lower()
-            if "duplicate" in message or "unique" in message:
-                raise HTTPException(
-                    status_code=409,
-                    detail="Product with this SEO keyword already exists",
-                )
-            raise
+            return await self.repository.get_by_id(product.product_id)
 
         except Exception:
             await self.session.rollback()
             raise
-    
+
     async def delete_product(
         self,
         product: Product,
     ):
-        await self.session.delete(product)
-        await self.session.commit()
+        try:
+            await self.session.delete(product)
+            await self.session.commit()
+        except Exception:
+            await self.session.rollback()
+            raise
