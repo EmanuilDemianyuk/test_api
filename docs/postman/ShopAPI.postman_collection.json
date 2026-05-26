@@ -1,0 +1,258 @@
+{
+  "info": {
+    "name": "ShopAPI",
+    "description": "Request collection for testing the FastAPI service with seeded demo data",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "category_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "product_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "GET /category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/category?page=1&size=20",
+              "host": ["{{base_url}}"],
+              "path": ["category"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (!body || !Array.isArray(body.items)) { return; }",
+                  "const seededCategory = body.items.find((item) => [",
+                  "  \"Demo Store\",",
+                  "  \"Men's Clothing\",",
+                  "  \"Women's Clothing\",",
+                  "  \"Footwear\",",
+                  "  \"Accessories\",",
+                  "  \"Home & Living\"",
+                  "].includes(item.name));",
+                  "if (seededCategory && seededCategory.category_id && !pm.collectionVariables.get('category_id')) {",
+                  "  pm.collectionVariables.set('category_id', String(seededCategory.category_id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /category/{category_id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/category/{{category_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["category", "{{category_id}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Clothing (Postman)\",\n  \"description\": \"Category for clothing\",\n  \"parent_category_id\": null,\n  \"seo_keyword\": \"clothing-postman-sample\",\n  \"meta_title\": \"Clothing (Postman)\",\n  \"meta_description\": \"Clothing products\",\n  \"meta_keyword\": \"clothing, products\",\n  \"image\": \"https://example.com/images/clothing.png\",\n  \"status\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/category",
+              "host": ["{{base_url}}"],
+              "path": ["category"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.category_id) {",
+                  "  pm.collectionVariables.set('category_id', String(body.category_id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /category/{category_id}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Clothing and accessories\",\n  \"description\": \"Updated category description\",\n  \"status\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/category/{{category_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["category", "{{category_id}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /category/{category_id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/category/{{category_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["category", "{{category_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "GET /product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/product?page=1&size=50",
+              "host": ["{{base_url}}"],
+              "path": ["product"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "size", "value": "50" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (!body || !Array.isArray(body.items)) { return; }",
+                  "const seededProduct = body.items.find((item) => [",
+                  "  \"Essential Cotton T-Shirt\",",
+                  "  \"Fleece Hoodie\",",
+                  "  \"Relaxed Linen Dress\",",
+                  "  \"Trail Runner Sneakers\",",
+                  "  \"Leather Crossbody Bag\",",
+                  "  \"Ceramic Coffee Mug Set\"",
+                  "].includes(item.name));",
+                  "if (seededProduct && seededProduct.product_id) {",
+                  "  pm.collectionVariables.set('product_id', String(seededProduct.product_id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"T-shirt (Postman)\",\n  \"description\": \"Comfortable cotton T-shirt\",\n  \"seo_keyword\": \"tshirt-postman-sample\",\n  \"meta_title\": \"T-shirt (Postman)\",\n  \"meta_description\": \"Cotton T-shirt\",\n  \"meta_keyword\": \"tshirt, clothing\",\n  \"image\": \"https://example.com/images/tshirt.png\",\n  \"status\": 1,\n  \"price\": 1299.99,\n  \"model\": \"TSH-001\",\n  \"manufacturer_id\": 1,\n  \"categories\": [\n    {\n      \"category_id\": {{category_id}}\n    }\n  ],\n  \"images\": [\n    {\n      \"image\": \"https://example.com/images/tshirt-1.png\",\n      \"sort_order\": 0\n    }\n  ],\n  \"attributes\": [\n    {\n      \"group_name\": \"Size\",\n      \"name\": \"Size\",\n      \"value\": \"M\",\n      \"sort_order\": 0\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/product",
+              "host": ["{{base_url}}"],
+              "path": ["product"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.product_id) {",
+                  "  pm.collectionVariables.set('product_id', String(body.product_id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /product/{product_id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/product/{{product_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["product", "{{product_id}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
