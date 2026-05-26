@@ -15,6 +15,7 @@ from app.schemas.product import (
     ProductCreateSchema,
     ProductDetailSchema,
     ProductListItemSchema,
+    ProductUpdateSchema,
 )
 
 
@@ -73,6 +74,34 @@ async def create_product(
     return await service.create_product(
         payload,
     )
+
+
+@router.patch(
+    "/{product_id}",
+    response_model=ProductDetailSchema,
+)
+async def update_product(
+    product_id: int,
+    payload: ProductUpdateSchema,
+    service: ProductService = Depends(
+        get_product_service,
+    ),
+):
+    product = await service.repository.get_by_id(
+        product_id,
+    )
+
+    if not product:
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found",
+        )
+
+    return await service.update_product(
+        product,
+        payload,
+    )
+
 
 @router.get(
     "/{product_id}",

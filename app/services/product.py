@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.category import Category
 from app.models.product import Product
 from app.models.product_image import ProductImage
 from app.models.product_attribute import ProductAttribute
@@ -104,17 +105,59 @@ class ProductService:
         product: Product,
         payload: ProductUpdateSchema,
     ):
-        update_data = payload.model_dump(
-            exclude_unset=True,
-        )
+        try:
+            update_data = payload.model_dump(
+                exclude_unset=True,
+            )
 
-        for key, value in update_data.items():
-            setattr(product, key, value)
+            categories = update_data.pop("categories", None)
 
-        await self.session.commit()
-        await self.session.refresh(product)
+            if categories is not None:
+                for product_category in list(product.categories):
+                    await self.session.delete(product_category)
 
-        return product
+                for category_data in categories:
+                    category = await self.session.get(
+                        Category,
+                        category_data["category_id"],
+                    )
+
+                    if category is None:
+                        raise HTTPException(
+                            status_code=404,
+                            detail="Category not found",
+                        )
+
+                    self.session.add(
+                        ProductCategory(
+                            product_id=product.product_id,
+                            category_id=category.category_id,
+                        )
+                    )
+
+            for key, value in update_data.items():
+                setattr(product, key, value)
+
+            await self.session.commit()
+            await self.session.refresh(product)
+
+            return await self.repository.get_by_id(
+                product.product_id,
+            )
+
+        except IntegrityError as exc:
+            await self.session.rollback()
+            message = str(exc.orig).lower()
+            if "duplicate" in message or "unique" in message:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Product with this SEO keyword already exists",
+                )
+            raise
+
+        except Exception:
+            await self.session.rollback()
+            raise
     
     async def delete_product(
         self,

@@ -113,6 +113,10 @@ class ProductUpdateSchema(BaseModel):
 
     manufacturer_id: int | None = None
 
+    categories: list[
+        ProductCategoryCreateSchema
+    ] | None = None
+
 class ProductListItemSchema(BaseModel):
     product_id: int
 
