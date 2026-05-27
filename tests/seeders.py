@@ -12,6 +12,7 @@ from app.models.product import Product
 from app.models.product_attribute import ProductAttribute
 from app.models.product_category import ProductCategory
 from app.models.product_image import ProductImage
+from app.models.store import Store
 from app.repositories.category import CategoryRepository
 
 
@@ -111,10 +112,46 @@ async def seed_test_data(
     )
 
 
+async def create_product(
+    session: AsyncSession,
+    name: str,
+    seo_keyword: str,
+) -> int:
+    seeded = await seed_test_data(session)
+
+    product = seeded.product.product
+
+    product.name = name
+    product.seo_keyword = seo_keyword
+
+    await session.commit()
+    await session.refresh(product)
+
+    return product.product_id
+
+
+async def create_store(
+    session: AsyncSession,
+    name: str,
+) -> int:
+    store = Store(
+        name=name,
+    )
+
+    session.add(store)
+
+    await session.commit()
+    await session.refresh(store)
+
+    return store.store_id    
+
+
+
 async def cleanup_seed_data(session: AsyncSession) -> None:
     await session.execute(sa.delete(ProductAttribute))
     await session.execute(sa.delete(ProductImage))
     await session.execute(sa.delete(ProductCategory))
     await session.execute(sa.delete(Product))
+    await session.execute(sa.delete(Store))
     await session.execute(sa.delete(Category))
     await session.commit()

@@ -13,11 +13,15 @@ class ProductStoreRepository:
     async def get_product_with_stores(self, product_id: int):
         query = (
             select(Product)
-            .options(selectinload(Product.stores))
+            .options(
+                selectinload(Product.stores)
+                .selectinload(ProductStore.store)
+            )
             .where(Product.product_id == product_id)
         )
 
         result = await self.session.execute(query)
+
         return result.scalar_one_or_none()
 
     async def get_store(self, store_id: int):

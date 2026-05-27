@@ -17,7 +17,13 @@ class ProductStoreService:
                 detail="Product not found",
             )
 
-        return product.stores
+        return [
+            {
+                "store_id": relation.store.store_id,
+                "name": relation.store.name,
+            }
+            for relation in product.stores
+        ]
 
     async def add_store_to_product(
         self,
