@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.enums import StatusEnum
@@ -106,7 +107,45 @@ class CategoryRepository:
         )
 
         total = len(categories)
-        start = (page - 1) * size
-        end = start + size
+        
+        stmt = (
+            select(Category)
+            .limit(size)
+            .offset((page - 1) * size)
+        )
 
-        return categories[start:end], total
+        if status is not None:
+            stmt = stmt.where(
+                Category.status == StatusEnum(status)
+            )
+
+        result = await self.session.execute(stmt)
+        paginated_categories = result.scalars().all()
+
+        full_paths = build_category_full_paths(paginated_categories)
+
+        for category in paginated_categories:
+            category.full_path = full_paths[
+                category.category_id
+            ]
+
+        if search:
+            paginated_categories = [
+                category
+                for category in paginated_categories
+                if search.lower() in category.full_path.lower()
+            ]
+
+        sort_key = (
+            lambda category: category.full_path
+            if sort_by == "full_path"
+            else category.category_id
+        )
+
+        paginated_categories = sorted(
+            paginated_categories,
+            key=sort_key,
+            reverse=sort_order == "desc",
+        )
+
+        return paginated_categories, total
