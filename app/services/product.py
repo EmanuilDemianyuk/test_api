@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from decimal import Decimal
 
-from app.core.enums import StatusEnum
+from app.core.enums import StatusEnum, SortByEnum, SortOrderEnum
 from app.models.category import Category
 from app.models.product import Product
 from app.models.product_image import ProductImage
@@ -137,6 +137,8 @@ class ProductService:
         min_price: Decimal | None = None,
         max_price: Decimal | None = None,
         status: StatusEnum | None = None,
+        sort_by: SortByEnum | None = None,
+        sort_order: SortOrderEnum | None = None,
     ):
         return await self.repository.get_products(
             page=page,
@@ -145,6 +147,8 @@ class ProductService:
             min_price=min_price,
             max_price=max_price,
             status=status,
+            sort_by=sort_by,
+            sort_order=sort_order,
         )
 
     async def _ensure_product_exists(

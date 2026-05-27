@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.enums import StatusEnum
+from app.core.enums import StatusEnum, SortByEnum, SortOrderEnum
 from app.models.category import Category
 from app.models.product import Product
 from app.models.product_image import ProductImage
@@ -44,6 +44,8 @@ class ProductRepository:
         min_price: Decimal | None = None,
         max_price: Decimal | None = None,
         status: StatusEnum | None = None,
+        sort_by: SortByEnum | None = None,
+        sort_order: SortOrderEnum | None = None,
     ) -> tuple[list[dict], int]:
 
         stmt = select(Product)
@@ -64,9 +66,30 @@ class ProductRepository:
         if status is not None:
             stmt = stmt.where(Product.status == status)
 
+        # Determine sort column
+        sort_col = Product.product_id
+        if sort_by == SortByEnum.NAME:
+            sort_col = Product.name
+        elif sort_by == SortByEnum.PRICE:
+            sort_col = Product.price
+        elif sort_by == SortByEnum.CATEGORY:
+            # For category sorting, join and sort by category name
+            if not category_ids:
+                stmt = stmt.join(ProductCategory)
+            stmt = stmt.join(Category, ProductCategory.category_id == Category.category_id)
+            sort_col = Category.name
+        elif sort_by == SortByEnum.DATE_ADDED:
+            sort_col = Product.date_added
+
+        # Determine sort direction
+        if sort_order == SortOrderEnum.DESC:
+            sort_col = sort_col.desc()
+        else:
+            sort_col = sort_col.asc()
+
         stmt = (
             stmt
-            .order_by(Product.product_id.asc())
+            .order_by(sort_col)
             .options(
                 selectinload(Product.categories)
                 .selectinload(ProductCategory.category)

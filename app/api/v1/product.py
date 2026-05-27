@@ -10,7 +10,7 @@ from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
-from app.core.enums import StatusEnum
+from app.core.enums import StatusEnum, SortByEnum, SortOrderEnum
 
 from app.core.pagination import PaginatedResponse
 from app.repositories.product import ProductRepository
@@ -57,6 +57,8 @@ async def get_products(
     min_price: Decimal | None = None,
     max_price: Decimal | None = None,
     status: StatusEnum | None = None,
+    sort_by: SortByEnum | None = None,
+    sort_order: SortOrderEnum | None = None,
     service: ProductService = Depends(
         get_product_service,
     ),
@@ -68,6 +70,8 @@ async def get_products(
         min_price=min_price,
         max_price=max_price,
         status=status,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
 
     return {
