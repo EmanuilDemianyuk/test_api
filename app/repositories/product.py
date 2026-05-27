@@ -1,9 +1,11 @@
+from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.enums import StatusEnum
 from app.models.category import Category
 from app.models.product import Product
 from app.models.product_image import ProductImage
@@ -38,10 +40,32 @@ class ProductRepository:
         self,
         page: int,
         size: int,
+        category_ids: list[int] | None = None,
+        min_price: Decimal | None = None,
+        max_price: Decimal | None = None,
+        status: StatusEnum | None = None,
     ) -> tuple[list[dict], int]:
 
+        stmt = select(Product)
+
+        if category_ids:
+            stmt = (
+                stmt
+                .join(ProductCategory)
+                .where(ProductCategory.category_id.in_(category_ids))
+            )
+
+        if min_price is not None:
+            stmt = stmt.where(Product.price >= min_price)
+
+        if max_price is not None:
+            stmt = stmt.where(Product.price <= max_price)
+
+        if status is not None:
+            stmt = stmt.where(Product.status == status)
+
         stmt = (
-            select(Product)
+            stmt
             .order_by(Product.product_id.asc())
             .options(
                 selectinload(Product.categories)
@@ -54,8 +78,25 @@ class ProductRepository:
         result = await self.session.execute(stmt)
         products = result.scalars().unique().all()
     
-        # total count (correct)
-        total_stmt = select(func.count(Product.product_id))
+        # total count with filters
+        total_stmt = select(func.count(Product.product_id.distinct()))
+
+        if category_ids:
+            total_stmt = (
+                total_stmt
+                .join(ProductCategory)
+                .where(ProductCategory.category_id.in_(category_ids))
+            )
+
+        if min_price is not None:
+            total_stmt = total_stmt.where(Product.price >= min_price)
+
+        if max_price is not None:
+            total_stmt = total_stmt.where(Product.price <= max_price)
+
+        if status is not None:
+            total_stmt = total_stmt.where(Product.status == status)
+
         total = await self.session.scalar(total_stmt)
     
         items = []

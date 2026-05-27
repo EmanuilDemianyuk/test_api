@@ -4,7 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+from decimal import Decimal
 
+from app.core.enums import StatusEnum
 from app.models.category import Category
 from app.models.product import Product
 from app.models.product_image import ProductImage
@@ -131,10 +133,18 @@ class ProductService:
         self,
         page: int,
         size: int,
+        category_ids: list[int] | None = None,
+        min_price: Decimal | None = None,
+        max_price: Decimal | None = None,
+        status: StatusEnum | None = None,
     ):
         return await self.repository.get_products(
             page=page,
             size=size,
+            category_ids=category_ids,
+            min_price=min_price,
+            max_price=max_price,
+            status=status,
         )
 
     async def _ensure_product_exists(

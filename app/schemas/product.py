@@ -1,11 +1,21 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel
-from pydantic import ConfigDict
-from pydantic import Field
+from pydantic import BaseModel, field_serializer, ConfigDict, Field
 
 from app.core.enums import StatusEnum
+
+
+class ProductFilterSchema(BaseModel):
+    category_id: list[int] | None = None
+    min_price: Decimal | None = None
+    max_price: Decimal | None = None
+    status: StatusEnum | None = None
+
+
+    @field_serializer("min_price", "max_price")
+    def serialize_decimal(self, value: Decimal | None):
+        return str(value) if value is not None else None
 
 
 class ProductImageCreateSchema(BaseModel):

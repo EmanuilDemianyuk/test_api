@@ -3,10 +3,14 @@ from fastapi import Depends
 from fastapi import HTTPException
 from fastapi import Response
 from fastapi import status
+from fastapi import Query
+
+from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
+from app.core.enums import StatusEnum
 
 from app.core.pagination import PaginatedResponse
 from app.repositories.product import ProductRepository
@@ -49,6 +53,10 @@ async def get_product_service(
 async def get_products(
     page: int = 1,
     size: int = 20,
+    category_id: list[int] = Query(None),
+    min_price: Decimal | None = None,
+    max_price: Decimal | None = None,
+    status: StatusEnum | None = None,
     service: ProductService = Depends(
         get_product_service,
     ),
@@ -56,6 +64,10 @@ async def get_products(
     items, total = await service.get_products(
         page=page,
         size=size,
+        category_ids=category_id,
+        min_price=min_price,
+        max_price=max_price,
+        status=status,
     )
 
     return {
