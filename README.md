@@ -2,6 +2,8 @@
 
 FastAPI backend for the shop API.
 
+---
+
 ## System requirements
 
 ### Required components
@@ -13,42 +15,118 @@ FastAPI backend for the shop API.
 
 ### Optional
 
-- Apache2 — **not required** for the current stack. Only needed if you want to expose the API through Apache as an external proxy.
+- Apache2 — not required for the current stack. Only needed if you want to expose the API through Apache as an external proxy.
 - Python 3.12 — required only for local runs without Docker.
+
+---
 
 ## Postman collection
 
-The repository includes a ready-to-use request collection:
+The repository includes a ready-to-use Postman collection:
 
 - `docs/postman/ShopAPI.postman_collection.json`
 
-### How to import
+### Import steps
 
-1. Open Postman.
-2. Click `Import`.
-3. Select `docs/postman/ShopAPI.postman_collection.json`.
-4. Make sure the `base_url` variable is set to `http://localhost:8000`.
+1. Open Postman
+2. Click `Import`
+3. Select `docs/postman/ShopAPI.postman_collection.json`
+4. Ensure the `base_url` variable is set to:
 
-### Seeded demo workflow
+```text
+http://localhost:8000
+```
 
-The application seeds a realistic demo catalog on startup by default (`AUTO_SEED_TEST_DATA=true`).
+---
 
-After importing the collection:
+## Seeded demo data
 
-1. Run `GET /category` to populate `category_id` from the seeded categories when it is still empty.
-2. Run `GET /product` to populate `product_id` from the seeded demo products.
-3. Use `GET /product/{{product_id}}` to inspect a seeded demo item.
-4. Use `POST /product` with the current `category_id` variable to create a new product linked to seeded demo data.
+The application automatically seeds a demo catalog during startup when:
 
-If you want to disable the seeded catalog, set `AUTO_SEED_TEST_DATA=false` in your `.env`.
+```env
+AUTO_SEED_TEST_DATA=true
+```
 
-### Base URL
+This provides a preconfigured dataset for quick API testing and Postman usage.
 
-- `http://localhost:8000`
+### Demo workflow
 
-## Start the server
+After importing the Postman collection:
 
-### Option 1: Docker Compose
+1. Run:
+
+```http
+GET /category
+```
+
+to retrieve seeded categories and populate `category_id`.
+
+2. Run:
+
+```http
+GET /product
+```
+
+to retrieve seeded products and populate `product_id`.
+
+3. Inspect a seeded product:
+
+```http
+GET /product/{{product_id}}
+```
+
+4. Create a new product linked to an existing seeded category:
+
+```http
+POST /product
+```
+
+### Disable demo seeding
+
+To disable automatic demo data creation:
+
+```env
+AUTO_SEED_TEST_DATA=false
+```
+
+---
+
+## Important note about tests and database state
+
+Test execution may modify, overwrite, or fully recreate the database state.
+
+As a result:
+
+- seeded demo data is not guaranteed to persist after running tests;
+- database records and identifiers may change;
+- the database can contain test-generated data instead of the initial seeded catalog.
+
+This behavior is expected because integration and repository tests operate against a real database instance.
+
+### Restore seeded demo data
+
+To fully recreate the database and restore seeded demo records:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+The `-v` flag removes Docker volumes, ensuring a clean database initialization and fresh seeding process.
+
+---
+
+## Base URL
+
+```text
+http://localhost:8000
+```
+
+---
+
+# Running the application
+
+## Option 1 — Docker Compose (recommended)
 
 From the project root:
 
@@ -56,81 +134,173 @@ From the project root:
 docker compose up --build
 ```
 
-The API will be available at:
+Available services:
 
-- http://localhost:8000
+- API: http://localhost:8000
 - Swagger UI: http://localhost:8000/docs
+- phpMyAdmin: http://localhost:8080
 
-### Option 2: Local run
+---
+
+## Option 2 — Local development run
 
 ```bash
 cd backend
+
 python -m venv .venv
+
 source .venv/bin/activate
+
 pip install -r requirements.txt
+
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-## Run tests
+---
 
-### Docker Compose
+# Running tests
+
+## Docker Compose
+
+Run all tests:
 
 ```bash
 docker exec fastapi_app python -m pytest
 ```
 
-### Local run
-
-```bash
-cd backend
-source .venv/bin/activate
-python -m pytest
-```
-
-## Useful commands
-
-### Rebuild Docker containers
-
-```bash
-docker compose up --build
-```
-
-### Stop containers
-
-```bash
-docker compose down
-```
-
-### Run a specific test file
+Run a specific test file:
 
 ```bash
 docker exec fastapi_app python -m pytest tests/test_category_tree_usage.py -q -s
 ```
 
-## Environment
+---
 
-The app uses `.env` for configuration. Make sure it exists in `backend/.env` before starting the containers.
+## Local environment
 
-## Database
+```bash
+cd backend
 
-- MySQL is started by Docker Compose
-- phpMyAdmin is available at http://localhost:8080
+source .venv/bin/activate
 
-## API endpoints for testing
+python -m pytest
+```
 
-### Categories
+---
 
-- `GET /category` — get a paginated list of categories
-- `GET /category/{category_id}` — get a category by ID
-- `POST /category` — create a category
-- `PATCH /category/{category_id}` — update a category
-- `DELETE /category/{category_id}` — delete a category
+# Useful Docker commands
 
-### Products
+## Rebuild containers
 
-- `POST /product` — create a product
-- `GET /product/{product_id}` — get a product by ID
+```bash
+docker compose up --build
+```
 
-### Health
+## Stop containers
 
-- `GET /` — check API availability
+```bash
+docker compose down
+```
+
+## Remove containers and volumes
+
+```bash
+docker compose down -v
+```
+
+---
+
+# Environment configuration
+
+The application uses environment variables from:
+
+```text
+backend/.env
+```
+
+Ensure the file exists before starting the application.
+
+Example:
+
+```env
+DB_HOST=****
+DB_PORT=****
+DB_NAME=****
+DB_USER=****
+DB_PASSWORD=****
+AUTO_SEED_TEST_DATA=true
+```
+
+---
+
+# Database
+
+## MySQL
+
+The MySQL database is automatically started via Docker Compose.
+
+## phpMyAdmin
+
+Available at:
+
+```text
+http://localhost:8080
+```
+
+---
+
+# API endpoints
+
+## Health check
+
+| Method | Endpoint | Description            |
+| ------ | -------- | ---------------------- |
+| GET    | `/`      | Check API availability |
+
+---
+
+## Categories
+
+| Method | Endpoint                  | Description              |
+| ------ | ------------------------- | ------------------------ |
+| GET    | `/category`               | Get paginated categories |
+| GET    | `/category/{category_id}` | Get category by ID       |
+| POST   | `/category`               | Create category          |
+| PATCH  | `/category/{category_id}` | Update category          |
+| DELETE | `/category/{category_id}` | Delete category          |
+
+---
+
+## Products
+
+| Method | Endpoint                | Description            |
+| ------ | ----------------------- | ---------------------- |
+| GET    | `/product`              | Get paginated products |
+| GET    | `/product/{product_id}` | Get product by ID      |
+| POST   | `/product`              | Create product         |
+
+---
+
+# Project stack
+
+- FastAPI
+- SQLAlchemy
+- MySQL 8
+- Docker / Docker Compose
+- Pytest
+- Pydantic
+- phpMyAdmin
+
+---
+
+# Development notes
+
+- Swagger/OpenAPI documentation is auto-generated by FastAPI.
+- The project is designed for container-first local development.
+- Integration tests use a real database instance.
+- Seeded demo data is intended only for development/testing environments.
+- Apache2 integration is intentionally excluded from the default stack.
+
+```
+
+```
